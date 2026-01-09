@@ -4,12 +4,21 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 import sqlite3
 from datetime import datetime, date
+import os
 
 app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = BASE_DIR / "data" / "gymlog.db"
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+# Use explicit env override, or /tmp when running on Vercel (serverless), otherwise keep default local path
+if os.getenv("GYMLOG_DB"):
+    DB_PATH = Path(os.getenv("GYMLOG_DB"))
+elif os.getenv("VERCEL"):
+    DB_PATH = Path("/tmp/gymlog.db")
+else:
+    DB_PATH = BASE_DIR / "data" / "gymlog.db"
+
+templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 
 # Used only to seed the DB the first time
 WORKOUTS = {
@@ -21,7 +30,8 @@ WORKOUTS = {
 
 def db_conn():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    # Allow use from serverless environments / threads
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
@@ -214,9 +224,11 @@ def fetch_sets_for_session(session_id: int, limit: int = 200):
         return [dict(r) for r in rows]
 
 
-# Init + seed
-init_db()
-seed_templates_if_empty()
+# Init + seed on startup (safer for serverless cold starts)
+@app.on_event("startup")
+def startup():
+    init_db()
+    seed_templates_if_empty()
 
 
 @app.get("/", response_class=HTMLResponse)
