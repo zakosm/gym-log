@@ -178,61 +178,6 @@ def fetch_last_for_exercises(exercise_names: list[str]):
         return {r["exercise"]: dict(r) for r in rows}
 
 
-def fetch_prs_for_exercises(exercise_names: list[str]):
-    """Return both highest-weight and highest-rep sets per exercise.
-
-    Result format:
-      {
-        "Bench Press": {
-            "weight_pr": {"exercise": "...", "weight": 120.0, "reps": 3, "day": "2026-01-01"},
-            "reps_pr":   {"exercise": "...", "weight": 90.0,  "reps": 12, "day": "2026-02-01"},
-        },
-        ...
-      }
-    """
-    if not exercise_names:
-        return {}
-
-    placeholders = ",".join(["?"] * len(exercise_names))
-    prs: dict = {}
-
-    with db_conn() as conn:
-        # best by weight
-        rows_w = conn.execute(f"""
-            SELECT se.exercise, se.weight, se.reps, se.day
-            FROM set_entries se
-            JOIN (
-                SELECT exercise, MAX(weight) AS max_w
-                FROM set_entries
-                WHERE exercise IN ({placeholders})
-                GROUP BY exercise
-            ) maxes ON maxes.exercise = se.exercise AND maxes.max_w = se.weight
-            GROUP BY se.exercise
-        """, exercise_names).fetchall()
-
-        # best by reps
-        rows_r = conn.execute(f"""
-            SELECT se.exercise, se.weight, se.reps, se.day
-            FROM set_entries se
-            JOIN (
-                SELECT exercise, MAX(reps) AS max_r
-                FROM set_entries
-                WHERE exercise IN ({placeholders})
-                GROUP BY exercise
-            ) maxes ON maxes.exercise = se.exercise AND maxes.max_r = se.reps
-            GROUP BY se.exercise
-        """, exercise_names).fetchall()
-
-        for r in rows_w:
-            ex = r["exercise"]
-            prs.setdefault(ex, {})["weight_pr"] = dict(r)
-        for r in rows_r:
-            ex = r["exercise"]
-            prs.setdefault(ex, {})["reps_pr"] = dict(r)
-
-    return prs
-
-
 def get_active_session_id(template_id: int, day: str):
     with db_conn() as conn:
         row = conn.execute("""
@@ -322,7 +267,6 @@ def home(request: Request, t: int | None = None, edit: int = 0):
 
     exercise_names = [ex["name"] for ex in exercises]
     last = fetch_last_for_exercises(exercise_names)
-    prs = fetch_prs_for_exercises(exercise_names)
 
     today = date.today().isoformat()
 
@@ -337,7 +281,6 @@ def home(request: Request, t: int | None = None, edit: int = 0):
             "selected_template": selected_template,
             "exercises": exercises,
             "last": last,
-            "prs": prs,
             "today": today,
             "edit": (edit == 1),
 

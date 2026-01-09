@@ -182,24 +182,6 @@
                 </div>
               {% endif %}
 
-              {% if last.get(ex.name) %}
-                <div class="last">
-                  Last: {{ last[ex.name].weight }} kg × {{ last[ex.name].reps }} — {{ last[ex.name].day }}
-                </div>
-              {% else %}
-                <div class="last">Last: —</div>
-              {% endif %}
-
-              {% set p = prs.get(ex.name) %}
-              {% if p %}
-                {% if p.weight_pr %}
-                  <div class="pr">PR (weight): {{ p.weight_pr.weight }} kg × {{ p.weight_pr.reps }} — {{ p.weight_pr.day }}</div>
-                {% endif %}
-                {% if p.reps_pr %}
-                  <div class="pr">PR (reps): {{ p.reps_pr.weight }} kg × {{ p.reps_pr.reps }} — {{ p.reps_pr.day }}</div>
-                {% endif %}
-              {% endif %}
-
               {% if edit %}
                 <form method="post" action="/template/remove_exercise" style="margin-top:10px;">
                   <input type="hidden" name="template_id" value="{{ selected_template.id }}">
@@ -254,17 +236,6 @@
               <li>
                 <strong>{{ r.exercise }}</strong> — {{ r.weight }} x {{ r.reps }}
                 <span class="muted">({{ r.workout }}, {{ r.day }})</span>
-              </li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-
-        {% if active_session_id %}
-          <h3>Session log</h3>
-          <ul class="session-sets">
-            {% for s in session_sets %}
-              <li>
-                <strong>{{ s.exercise }}</strong> — {{ s.weight }} kg × {{ s.reps }} <small>({{ s.created_at }})</small>
               </li>
             {% endfor %}
           </ul>
