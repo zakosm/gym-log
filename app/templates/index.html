@@ -182,6 +182,17 @@
                 </div>
               {% endif %}
 
+              {% if last.get(ex.name) %}
+                <div class="last">
+                  Last: {{ last[ex.name].weight }} kg × {{ last[ex.name].reps }} — {{ last[ex.name].day }}
+                </div>
+              {% endif %}
+              {% if prs.get(ex.name) %}
+                <div class="pr">
+                  PR: {{ prs[ex.name].weight }} kg × {{ prs[ex.name].reps }} — {{ prs[ex.name].day }}
+                </div>
+              {% endif %}
+
               {% if edit %}
                 <form method="post" action="/template/remove_exercise" style="margin-top:10px;">
                   <input type="hidden" name="template_id" value="{{ selected_template.id }}">
