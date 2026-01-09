@@ -176,9 +176,15 @@
             <div class="card">
               <strong>{{ ex.name }}</strong>
 
-              {% if last.get(ex.name) %}
+              {% if last.get(ex.name) or pr.get(ex.name) %}
                 <div class="muted" style="margin-top:6px;">
-                  Last: {{ last[ex.name].weight }} x {{ last[ex.name].reps }} ({{ last[ex.name].day }})
+                  {% if last.get(ex.name) %}
+                    Last: {{ last[ex.name].weight }} x {{ last[ex.name].reps }} ({{ last[ex.name].day }})
+                  {% endif %}
+                  {% if pr.get(ex.name) %}
+                    {% if last.get(ex.name) %} • {% endif %}
+                    PR: {{ pr[ex.name].weight }} x {{ pr[ex.name].reps }} ({{ pr[ex.name].day }})
+                  {% endif %}
                 </div>
               {% endif %}
 
