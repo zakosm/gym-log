@@ -1,330 +1,428 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8"/>
-    <title>Gym Log</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-    <style>
-      :root{
-        --bg:#ffffff; --text:#111; --muted:#666;
-        --card:#fff; --border:#e6e6e6;
-        --btn-bg:#f5f5f5; --btn-text:#111; --btn-border:#dcdcdc;
-        --shadow: 0 1px 0 rgba(0,0,0,.03);
-        --focus: rgba(0,0,0,.15);
-        --overlay: rgba(0,0,0,.45);
-      }
-      .dark{
-        --bg:#0b0f14; --text:#e9eef5; --muted:#a4b1c2;
-        --card:#0f1620; --border:#1f2a38;
-        --btn-bg:#121b26; --btn-text:#e9eef5; --btn-border:#253246;
-        --shadow: 0 1px 0 rgba(0,0,0,.25);
-        --focus: rgba(255,255,255,.18);
-        --overlay: rgba(0,0,0,.60);
-      }
+<head>
+  <meta charset="utf-8" />
+  <title>Gym Log</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-      html,body{height:100%;}
-      body{
-        margin:0; background:var(--bg); color:var(--text);
-        font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      }
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #111;
+      --muted: #666;
+      --card: #fff;
+      --border: #e6e6e6;
+      --btn-bg: #f5f5f5;
+      --btn-text: #111;
+      --btn-border: #dcdcdc;
+      --shadow: 0 1px 0 rgba(0, 0, 0, .03);
+      --focus: rgba(0, 0, 0, .15);
+      --overlay: rgba(0, 0, 0, .45);
+    }
 
-      .topbar{
-        position: sticky; top: 0; z-index: 50;
-        background: var(--bg);
-        border-bottom: 1px solid var(--border);
-        backdrop-filter: blur(6px);
-      }
-      .topbar-inner{
-        max-width: 760px;
-        margin: 0 auto;
-        padding: 10px 14px;
-        display:flex; align-items:center; justify-content:space-between;
-        gap: 12px;
-      }
-      .title{display:flex; flex-direction:column; gap:4px; min-width:0;}
-      .title h1{
-        font-size:18px; margin:0; line-height:1.1;
-        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      }
-      .pill{
-        display:inline-block; width:fit-content;
-        padding:4px 10px; border:1px solid var(--border);
-        border-radius:999px; font-size:12px; color:var(--muted);
-        background: var(--card);
-      }
-      .actions{display:flex; gap:10px; align-items:center; flex-shrink:0;}
+    .dark {
+      --bg: #0b0f14;
+      --text: #e9eef5;
+      --muted: #a4b1c2;
+      --card: #0f1620;
+      --border: #1f2a38;
+      --btn-bg: #121b26;
+      --btn-text: #e9eef5;
+      --btn-border: #253246;
+      --shadow: 0 1px 0 rgba(0, 0, 0, .25);
+      --focus: rgba(255, 255, 255, .18);
+      --overlay: rgba(0, 0, 0, .60);
+    }
 
-      .container{
-        max-width:760px; margin:0 auto; padding:14px;
-        padding-top: 14px;
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(6px);
+    }
+
+    .topbar-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .title h1 {
+      font-size: 18px;
+      margin: 0;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pill {
+      display: inline-block;
+      width: fit-content;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--card);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 14px;
+      padding-top: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 12px 0;
+      box-shadow: var(--shadow);
+    }
+
+    label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 12px;
+      border: 1px solid var(--btn-border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    button:focus {
+      box-shadow: 0 0 0 3px var(--focus);
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 800;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+    }
+
+    .iconbtn {
+      width: auto;
+      min-width: 44px;
+      padding: 10px 12px;
+      margin-top: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width:420px) {
+      .row {
+        grid-template-columns: 1fr;
       }
+    }
 
-      .card{
-        background:var(--card);
-        border:1px solid var(--border);
-        border-radius:14px;
-        padding:14px;
-        margin:12px 0;
-        box-shadow: var(--shadow);
-      }
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
 
-      label{font-size:14px; color:var(--muted);}
-      input,select,button{
-        width:100%;
-        padding:12px;
-        margin-top:8px;
-        border-radius:12px;
-        border:1px solid var(--btn-border);
-        background:var(--card);
-        color:var(--text);
-        font-size:16px;
-        outline:none;
-      }
-      input:focus,select:focus,button:focus{ box-shadow:0 0 0 3px var(--focus); }
+    ul {
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
 
-      button{
-        cursor:pointer; font-weight:800;
-        background:var(--btn-bg); color:var(--btn-text);
-      }
-      .iconbtn{
-        width:auto; min-width:44px;
-        padding:10px 12px; margin-top:0;
-        display:inline-flex; align-items:center; justify-content:center;
-        line-height:1;
-      }
+    li {
+      margin: 6px 0;
+    }
 
-      .row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-      @media (max-width:420px){ .row{grid-template-columns:1fr;} }
+    a {
+      text-decoration: none;
+    }
 
-      .muted{color:var(--muted); font-size:14px;}
-      ul{margin:8px 0 0; padding-left:18px;}
-      li{margin:6px 0;}
-      a{text-decoration:none;}
+    /* Custom modal */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      background: var(--overlay);
+      z-index: 100;
+      padding: 14px;
+    }
 
-      /* Custom modal */
-      .overlay{
-        position:fixed; inset:0; display:none;
-        background: var(--overlay);
-        z-index: 100;
-        padding: 14px;
-      }
-      .overlay.show{ display:flex; align-items:center; justify-content:center; }
-      .modal{
-        width: min(520px, 100%);
-      }
-    </style>
-  </head>
+    .overlay.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-  <body>
-    <div class="topbar">
-      <div class="topbar-inner">
-        <div class="title">
-          <h1>Gym Log</h1>
-          <span class="pill">Today: {{ today }}</span>
-        </div>
+    .modal {
+      width: min(520px, 100%);
+    }
+  </style>
+</head>
 
-        <div class="actions">
-          {% if selected_template %}
-            {% if edit %}
-              <a href="/?t={{ selected_template.id }}"><button type="button" class="iconbtn" title="Exit Edit Mode">✏️</button></a>
-            {% else %}
-              <a href="/?t={{ selected_template.id }}&edit=1"><button type="button" class="iconbtn" title="Edit Mode">✏️</button></a>
-            {% endif %}
-          {% endif %}
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="title">
+        <h1>Gym Log</h1>
+        <span class="pill">Today: {{ today }}</span>
+      </div>
 
-          {% if selected_template and (active_session_id is not none) and (not edit) %}
-            <button type="button" id="openDone" class="iconbtn" title="Finish workout">✅</button>
-          {% endif %}
+      <div class="actions">
+        {% if selected_template %}
+        {% if edit %}
+        <a href="/?t={{ selected_template.id }}"><button type="button" class="iconbtn"
+            title="Exit Edit Mode">✏️</button></a>
+        {% else %}
+        <a href="/?t={{ selected_template.id }}&edit=1"><button type="button" class="iconbtn"
+            title="Edit Mode">✏️</button></a>
+        {% endif %}
+        {% endif %}
 
-          <button type="button" id="themeToggle" class="iconbtn" title="Toggle dark mode">🌙</button>
-        </div>
+        {% if selected_template and (active_session_id is not none) and (not edit) %}
+        <button type="button" id="openDone" class="iconbtn" title="Finish workout">✅</button>
+        {% endif %}
+
+        <button type="button" id="themeToggle" class="iconbtn" title="Toggle dark mode">🌙</button>
       </div>
     </div>
+  </div>
 
-    <div class="container">
+  <div class="container">
 
-      <!-- Template selector -->
+    <!-- Template selector -->
+    <div class="card">
+      <form method="get" action="/">
+        <label>Pick workout template</label>
+        <select name="t" required>
+          {% for w in templates %}
+          <option value="{{ w.id }}" {% if selected_template and selected_template.id==w.id %}selected{% endif %}>
+            {{ w.name }}
+          </option>
+          {% endfor %}
+        </select>
+
+        <input type="hidden" name="edit" value="{{ 1 if edit else 0 }}">
+        <button type="submit">Load workout</button>
+      </form>
+
+      {% if selected_template %}
+      <div class="muted" style="margin-top:10px;">
+        {% if edit %}Edit mode: add/remove exercises.{% else %}Normal mode: log sets.{% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if selected_template %}
+    <div class="card">
+      <h2 style="margin:0 0 8px;">{{ selected_template.name }}</h2>
+
+      {% for ex in exercises %}
       <div class="card">
-        <form method="get" action="/">
-          <label>Pick workout template</label>
-          <select name="t" required>
-            {% for w in templates %}
-              <option value="{{ w.id }}"
-                {% if selected_template and selected_template.id == w.id %}selected{% endif %}>
-                {{ w.name }}
-              </option>
-            {% endfor %}
-          </select>
+        <strong>{{ ex.name }}</strong>
 
-          <input type="hidden" name="edit" value="{{ 1 if edit else 0 }}">
-          <button type="submit">Load workout</button>
-        </form>
-
-        {% if selected_template %}
-          <div class="muted" style="margin-top:10px;">
-            {% if edit %}Edit mode: add/remove exercises.{% else %}Normal mode: log sets.{% endif %}
-          </div>
+        {% if last.get(ex.name) %}
+        <div class="muted" style="margin-top:6px;">
+          Last: {{ last[ex.name].weight }} x {{ last[ex.name].reps }} ({{ last[ex.name].day }})
+        </div>
         {% endif %}
+
+        {% if pr.get(ex.name) %}
+        <div class="muted" style="margin-top:4px;">
+          PR: {{ pr[ex.name].weight }} x {{ pr[ex.name].reps }} ({{ pr[ex.name].day }})
+        </div>
+        {% endif %}
+
+
+        {% if edit %}
+        <form method="post" action="/template/remove_exercise" style="margin-top:10px;">
+          <input type="hidden" name="template_id" value="{{ selected_template.id }}">
+          <input type="hidden" name="exercise_id" value="{{ ex.id }}">
+          <button type="submit">Remove</button>
+        </form>
+        {% else %}
+        <form method="post" action="/log" style="margin-top:10px;">
+          <input type="hidden" name="template_id" value="{{ selected_template.id }}">
+          <input type="hidden" name="workout" value="{{ selected_template.name }}">
+          <input type="hidden" name="exercise" value="{{ ex.name }}">
+
+          <div class="row">
+            <div>
+              <label>Weight</label>
+              <input name="weight" type="number" step="0.5" min="0" required />
+            </div>
+            <div>
+              <label>Reps</label>
+              <input name="reps" type="number" min="1" required />
+            </div>
+          </div>
+
+          <button type="submit">Log set</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      {% if edit %}
+      <div class="card">
+        <form method="post" action="/template/add_exercise">
+          <label>Add exercise to {{ selected_template.name }}</label>
+          <input name="exercise_name" placeholder="e.g., Bulgarian Split Squat" required>
+          <input type="hidden" name="template_id" value="{{ selected_template.id }}">
+          <button type="submit">Add</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- This session -->
+    <div class="card">
+      <h2 style="margin:0 0 8px;">This session</h2>
+
+      {% if session_sets|length == 0 %}
+      <div class="muted">No sets logged in the current session.</div>
+      {% else %}
+      <ul>
+        {% for r in session_sets %}
+        <li>
+          <strong>{{ r.exercise }}</strong> — {{ r.weight }} x {{ r.reps }}
+          <span class="muted">({{ r.workout }}, {{ r.day }})</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Done confirmation modal -->
+  <div id="doneOverlay" class="overlay" aria-hidden="true">
+    <div class="modal card">
+      <h2 style="margin:0 0 8px;">Finish workout?</h2>
+      <div class="muted" style="margin-bottom:12px;">
+        Are you sure you’re done? This will end the current session and clear “This session”.
       </div>
 
       {% if selected_template %}
-        <div class="card">
-          <h2 style="margin:0 0 8px;">{{ selected_template.name }}</h2>
-
-          {% for ex in exercises %}
-            <div class="card">
-              <strong>{{ ex.name }}</strong>
-
-              {% if last.get(ex.name) or pr.get(ex.name) %}
-                <div class="muted" style="margin-top:6px;">
-                  {% if last.get(ex.name) %}
-                    Last: {{ last[ex.name].weight }} x {{ last[ex.name].reps }} ({{ last[ex.name].day }})
-                  {% endif %}
-                  {% if pr.get(ex.name) %}
-                    {% if last.get(ex.name) %} • {% endif %}
-                    PR: {{ pr[ex.name].weight }} x {{ pr[ex.name].reps }} ({{ pr[ex.name].day }})
-                  {% endif %}
-                </div>
-              {% endif %}
-
-              {% if edit %}
-                <form method="post" action="/template/remove_exercise" style="margin-top:10px;">
-                  <input type="hidden" name="template_id" value="{{ selected_template.id }}">
-                  <input type="hidden" name="exercise_id" value="{{ ex.id }}">
-                  <button type="submit">Remove</button>
-                </form>
-              {% else %}
-                <form method="post" action="/log" style="margin-top:10px;">
-                  <input type="hidden" name="template_id" value="{{ selected_template.id }}">
-                  <input type="hidden" name="workout" value="{{ selected_template.name }}">
-                  <input type="hidden" name="exercise" value="{{ ex.name }}">
-
-                  <div class="row">
-                    <div>
-                      <label>Weight</label>
-                      <input name="weight" type="number" step="0.5" min="0" required />
-                    </div>
-                    <div>
-                      <label>Reps</label>
-                      <input name="reps" type="number" min="1" required />
-                    </div>
-                  </div>
-
-                  <button type="submit">Log set</button>
-                </form>
-              {% endif %}
-            </div>
-          {% endfor %}
-
-          {% if edit %}
-            <div class="card">
-              <form method="post" action="/template/add_exercise">
-                <label>Add exercise to {{ selected_template.name }}</label>
-                <input name="exercise_name" placeholder="e.g., Bulgarian Split Squat" required>
-                <input type="hidden" name="template_id" value="{{ selected_template.id }}">
-                <button type="submit">Add</button>
-              </form>
-            </div>
-          {% endif %}
+      <form method="post" action="/session/done">
+        <input type="hidden" name="template_id" value="{{ selected_template.id }}">
+        <div class="row">
+          <button type="submit">Yes, I’m done</button>
+          <button type="button" id="cancelDone">Cancel</button>
         </div>
+      </form>
       {% endif %}
-
-      <!-- This session -->
-      <div class="card">
-        <h2 style="margin:0 0 8px;">This session</h2>
-
-        {% if session_sets|length == 0 %}
-          <div class="muted">No sets logged in the current session.</div>
-        {% else %}
-          <ul>
-            {% for r in session_sets %}
-              <li>
-                <strong>{{ r.exercise }}</strong> — {{ r.weight }} x {{ r.reps }}
-                <span class="muted">({{ r.workout }}, {{ r.day }})</span>
-              </li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      </div>
-
     </div>
+  </div>
 
-    <!-- Done confirmation modal -->
-    <div id="doneOverlay" class="overlay" aria-hidden="true">
-      <div class="modal card">
-        <h2 style="margin:0 0 8px;">Finish workout?</h2>
-        <div class="muted" style="margin-bottom:12px;">
-          Are you sure you’re done? This will end the current session and clear “This session”.
-        </div>
+  <script>
+    // Dark mode toggle (localStorage + system default)
+    (function () {
+      const root = document.documentElement;
+      const btn = document.getElementById("themeToggle");
 
-        {% if selected_template %}
-          <form method="post" action="/session/done">
-            <input type="hidden" name="template_id" value="{{ selected_template.id }}">
-            <div class="row">
-              <button type="submit">Yes, I’m done</button>
-              <button type="button" id="cancelDone">Cancel</button>
-            </div>
-          </form>
-        {% endif %}
-      </div>
-    </div>
+      function systemPrefersDark() {
+        return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      }
+      function applyTheme(mode) {
+        const isDark = (mode === "dark");
+        root.classList.toggle("dark", isDark);
+        btn.textContent = isDark ? "☀️" : "🌙";
+        btn.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+      }
 
-    <script>
-      // Dark mode toggle (localStorage + system default)
-      (function () {
-        const root = document.documentElement;
-        const btn = document.getElementById("themeToggle");
+      const saved = localStorage.getItem("theme"); // "dark" | "light" | null
+      if (saved === "dark" || saved === "light") applyTheme(saved);
+      else applyTheme(systemPrefersDark() ? "dark" : "light");
 
-        function systemPrefersDark() {
-          return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-        }
-        function applyTheme(mode) {
-          const isDark = (mode === "dark");
-          root.classList.toggle("dark", isDark);
-          btn.textContent = isDark ? "☀️" : "🌙";
-          btn.title = isDark ? "Switch to light mode" : "Switch to dark mode";
-        }
+      btn.addEventListener("click", () => {
+        const nowDark = root.classList.contains("dark");
+        const next = nowDark ? "light" : "dark";
+        localStorage.setItem("theme", next);
+        applyTheme(next);
+      });
+    })();
 
-        const saved = localStorage.getItem("theme"); // "dark" | "light" | null
-        if (saved === "dark" || saved === "light") applyTheme(saved);
-        else applyTheme(systemPrefersDark() ? "dark" : "light");
+    // Done modal
+    (function () {
+      const openBtn = document.getElementById("openDone");
+      const overlay = document.getElementById("doneOverlay");
+      const cancelBtn = document.getElementById("cancelDone");
 
-        btn.addEventListener("click", () => {
-          const nowDark = root.classList.contains("dark");
-          const next = nowDark ? "light" : "dark";
-          localStorage.setItem("theme", next);
-          applyTheme(next);
+      function open() {
+        if (!overlay) return;
+        overlay.classList.add("show");
+        overlay.setAttribute("aria-hidden", "false");
+      }
+      function close() {
+        if (!overlay) return;
+        overlay.classList.remove("show");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+
+      if (openBtn) openBtn.addEventListener("click", open);
+      if (cancelBtn) cancelBtn.addEventListener("click", close);
+
+      // click outside modal closes
+      if (overlay) {
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) close();
         });
-      })();
+      }
+    })();
+  </script>
+</body>
 
-      // Done modal
-      (function () {
-        const openBtn = document.getElementById("openDone");
-        const overlay = document.getElementById("doneOverlay");
-        const cancelBtn = document.getElementById("cancelDone");
-
-        function open() {
-          if (!overlay) return;
-          overlay.classList.add("show");
-          overlay.setAttribute("aria-hidden", "false");
-        }
-        function close() {
-          if (!overlay) return;
-          overlay.classList.remove("show");
-          overlay.setAttribute("aria-hidden", "true");
-        }
-
-        if (openBtn) openBtn.addEventListener("click", open);
-        if (cancelBtn) cancelBtn.addEventListener("click", close);
-
-        // click outside modal closes
-        if (overlay) {
-          overlay.addEventListener("click", (e) => {
-            if (e.target === overlay) close();
-          });
-        }
-      })();
-    </script>
-  </body>
 </html>
