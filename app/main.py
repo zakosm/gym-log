@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 import sqlite3
 from datetime import datetime, date
 import os
+import logging
 
 app = FastAPI()
 
@@ -26,6 +27,10 @@ WORKOUTS = {
     "Pull": ["Lat Pulldown", "Row", "Face Pull", "Bicep Curl"],
     "Legs": ["Squat", "RDL", "Leg Press", "Leg Curl", "Calf Raise"],
 }
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def db_conn():
@@ -224,11 +229,29 @@ def fetch_sets_for_session(session_id: int, limit: int = 200):
         return [dict(r) for r in rows]
 
 
+def get_db_info():
+    exists = DB_PATH.exists()
+    size = DB_PATH.stat().st_size if exists and DB_PATH.is_file() else None
+    counts = {}
+    try:
+        with db_conn() as conn:
+            for t in ("workout_templates", "exercises", "template_exercises", "workout_sessions", "set_entries"):
+                try:
+                    counts[t] = conn.execute(f"SELECT COUNT(*) AS c FROM {t}").fetchone()["c"]
+                except Exception:
+                    counts[t] = None
+    except Exception:
+        logger.exception("Failed to open DB for info")
+    return {"db_path": str(DB_PATH), "exists": exists, "size": size, "counts": counts}
+
+
 # Init + seed on startup (safer for serverless cold starts)
 @app.on_event("startup")
 def startup():
     init_db()
     seed_templates_if_empty()
+    logger.info("DB path: %s exists=%s", DB_PATH, DB_PATH.exists())
+    logger.info("DB counts: %s", get_db_info().get("counts"))
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -268,6 +291,12 @@ def home(request: Request, t: int | None = None, edit: int = 0):
     )
 
 
+@app.get("/admin/db_info")
+def admin_db_info():
+    # Quick endpoint to verify which DB file is used and basic table counts (check Vercel logs / response)
+    return get_db_info()
+
+
 @app.post("/log")
 def log_set(
     template_id: int = Form(...),
@@ -283,14 +312,18 @@ def log_set(
     if weight < 0 or weight > 2000 or reps < 1 or reps > 200:
         return RedirectResponse(url=f"/?t={template_id}", status_code=303)
 
-    session_id = ensure_active_session(template_id, workout, day)
+    try:
+        session_id = ensure_active_session(template_id, workout, day)
 
-    with db_conn() as conn:
-        conn.execute("""
-            INSERT INTO set_entries (day, workout, exercise, weight, reps, created_at, session_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (day, workout, exercise, weight, reps, now, session_id))
-        conn.commit()
+        with db_conn() as conn:
+            conn.execute("""
+                INSERT INTO set_entries (day, workout, exercise, weight, reps, created_at, session_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (day, workout, exercise, weight, reps, now, session_id))
+            conn.commit()
+    except Exception:
+        logger.exception("Failed to save set entry")
+        raise HTTPException(status_code=500, detail="Failed to save set; check server logs")
 
     return RedirectResponse(url=f"/?t={template_id}", status_code=303)
 
