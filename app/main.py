@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from pathlib import Path
@@ -10,6 +10,10 @@ import logging
 import base64
 import hashlib
 import hmac
+import csv
+import io
+from urllib.parse import urlencode
+import math
 
 app = FastAPI()
 
@@ -110,7 +114,7 @@ def init_db():
         )
         """)
 
-        # Sessions (now per-user)
+        # Sessions (per-user)
         conn.execute("""
         CREATE TABLE IF NOT EXISTS workout_sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -128,7 +132,7 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
-        # Logged sets (now per-user)
+        # Logged sets (per-user)
         conn.execute("""
         CREATE TABLE IF NOT EXISTS set_entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -146,8 +150,6 @@ def init_db():
             conn.execute("ALTER TABLE set_entries ADD COLUMN user_id INTEGER")
         except sqlite3.OperationalError:
             pass
-
-        # If set_entries existed before we added session_id, add it safely
         try:
             conn.execute("ALTER TABLE set_entries ADD COLUMN session_id INTEGER")
         except sqlite3.OperationalError:
@@ -166,14 +168,14 @@ def seed_templates_if_empty():
             conn.execute("INSERT INTO workout_templates(name) VALUES (?)", (template_name,))
             template_id = conn.execute(
                 "SELECT id FROM workout_templates WHERE name=?",
-                (template_name,)
+                (template_name,),
             ).fetchone()["id"]
 
             for idx, ex_name in enumerate(ex_list):
                 conn.execute("INSERT OR IGNORE INTO exercises(name) VALUES (?)", (ex_name,))
                 ex_id = conn.execute(
                     "SELECT id FROM exercises WHERE name=?",
-                    (ex_name,)
+                    (ex_name,),
                 ).fetchone()["id"]
 
                 conn.execute("""
@@ -199,7 +201,10 @@ def require_user_id(request: Request) -> int:
 
 def get_user_by_id(user_id: int):
     with db_conn() as conn:
-        row = conn.execute("SELECT id, email, is_admin FROM users WHERE id=?", (user_id,)).fetchone()
+        row = conn.execute(
+            "SELECT id, email, is_admin FROM users WHERE id=?",
+            (user_id,),
+        ).fetchone()
         return dict(row) if row else None
 
 
@@ -228,7 +233,7 @@ def create_user(email: str, password: str) -> int:
 def claim_legacy_rows(user_id: int):
     """
     If you had data before accounts existed, those rows have user_id NULL.
-    This assigns them to the first account that logs in/registers.
+    Assign them to the first account that logs in/registers.
     """
     with db_conn() as conn:
         conn.execute("UPDATE set_entries SET user_id=? WHERE user_id IS NULL", (user_id,))
@@ -287,7 +292,7 @@ def fetch_last_for_exercises(user_id: int, exercise_names: list[str]):
             WHERE se.user_id=?
         """, [user_id] + exercise_names + [user_id]).fetchall()
 
-        return {r["exercise"]: dict(r) for r in rows}
+    return {r["exercise"]: dict(r) for r in rows}
 
 
 def fetch_pr_for_exercises(user_id: int, exercise_names: list[str]):
@@ -334,7 +339,7 @@ def fetch_pr_for_exercises(user_id: int, exercise_names: list[str]):
             WHERE se.user_id=?
         """, [user_id] + exercise_names + [user_id] + exercise_names + [user_id] + exercise_names + [user_id]).fetchall()
 
-        return {r["exercise"]: dict(r) for r in rows}
+    return {r["exercise"]: dict(r) for r in rows}
 
 
 def get_active_session_id(user_id: int, template_id: int, day: str):
@@ -370,7 +375,10 @@ def close_active_session(user_id: int, template_id: int, day: str):
 
     now = datetime.now().isoformat(timespec="seconds")
     with db_conn() as conn:
-        conn.execute("UPDATE workout_sessions SET ended_at=? WHERE id=? AND user_id=?", (now, sid, user_id))
+        conn.execute(
+            "UPDATE workout_sessions SET ended_at=? WHERE id=? AND user_id=?",
+            (now, sid, user_id),
+        )
         conn.commit()
     return sid
 
@@ -386,6 +394,53 @@ def fetch_sets_for_session(user_id: int, session_id: int, limit: int = 200):
             LIMIT ?
         """, (user_id, session_id, limit)).fetchall()
         return [dict(r) for r in rows]
+
+
+def fetch_sets_filtered(
+    user_id: int,
+    exercise: str | None,
+    workout: str | None,
+    start: str | None,
+    end: str | None,
+    limit: int,
+    offset: int,
+):
+    where = ["user_id=?"]
+    params: list = [user_id]
+
+    if exercise:
+        where.append("exercise LIKE ?")
+        params.append(f"%{exercise}%")
+    if workout:
+        where.append("workout LIKE ?")
+        params.append(f"%{workout}%")
+    if start:
+        where.append("day >= ?")
+        params.append(start)
+    if end:
+        where.append("day <= ?")
+        params.append(end)
+
+    where_sql = " AND ".join(where)
+
+    with db_conn() as conn:
+        total = conn.execute(
+            f"SELECT COUNT(*) AS c FROM set_entries WHERE {where_sql}",
+            params,
+        ).fetchone()["c"]
+
+        rows = conn.execute(
+            f"""
+            SELECT day, workout, exercise, weight, reps, created_at
+            FROM set_entries
+            WHERE {where_sql}
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?
+            """,
+            params + [limit, offset],
+        ).fetchall()
+
+    return total, [dict(r) for r in rows]
 
 
 def get_db_info():
@@ -502,14 +557,95 @@ def home(request: Request, t: int | None = None, edit: int = 0):
             "pr": pr,
             "today": today,
             "edit": edit_mode,
-
             "active_session_id": active_session_id,
             "session_sets": session_sets,
-
             "user_email": user["email"],
             "user_is_admin": user_is_admin,
         },
     )
+
+
+@app.get("/history", response_class=HTMLResponse)
+def history(
+    request: Request,
+    exercise: str | None = None,
+    workout: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+    page: int = 1,
+):
+    uid = get_current_user_id(request)
+    if not uid:
+        return RedirectResponse(url="/login", status_code=303)
+
+    user = get_user_by_id(uid)
+    if not user:
+        request.session.clear()
+        return RedirectResponse(url="/login", status_code=303)
+
+    page = max(1, int(page))
+    limit = 200
+    offset = (page - 1) * limit
+
+    total, rows = fetch_sets_filtered(uid, exercise, workout, start, end, limit, offset)
+    pages = max(1, math.ceil(total / limit))
+
+    base_params = {
+        "exercise": exercise or "",
+        "workout": workout or "",
+        "start": start or "",
+        "end": end or "",
+    }
+
+    def qs(extra: dict):
+        d = {**base_params, **extra}
+        d = {k: v for k, v in d.items() if v}
+        return "?" + urlencode(d) if d else ""
+
+    return templates.TemplateResponse(
+        "history.html",
+        {
+            "request": request,
+            "user_email": user["email"],
+            "exercise": exercise,
+            "workout": workout,
+            "start": start,
+            "end": end,
+            "rows": rows,
+            "total": total,
+            "page": page,
+            "pages": pages,
+            "prev_qs": qs({"page": page - 1}),
+            "next_qs": qs({"page": page + 1}),
+            "export_qs": qs({}),  # same filters, no page
+        },
+    )
+
+
+@app.get("/export.csv")
+def export_csv(
+    request: Request,
+    exercise: str | None = None,
+    workout: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+):
+    uid = get_current_user_id(request)
+    if not uid:
+        return RedirectResponse(url="/login", status_code=303)
+
+    # limit export to something sane (adjust if you want)
+    total, rows = fetch_sets_filtered(uid, exercise, workout, start, end, limit=50000, offset=0)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["day", "workout", "exercise", "weight", "reps", "created_at"])
+    for r in rows:
+        writer.writerow([r["day"], r["workout"], r["exercise"], r["weight"], r["reps"], r["created_at"]])
+
+    csv_bytes = output.getvalue().encode("utf-8")
+    headers = {"Content-Disposition": 'attachment; filename="gymlog_export.csv"'}
+    return Response(content=csv_bytes, media_type="text/csv; charset=utf-8", headers=headers)
 
 
 @app.get("/admin/db_info")
@@ -531,7 +667,6 @@ def log_set(
     now = datetime.now().isoformat(timespec="seconds")
     day = date.today().isoformat()
 
-    # basic guardrails
     if weight < 0 or weight > 2000 or reps < 1 or reps > 200:
         return RedirectResponse(url=f"/?t={template_id}", status_code=303)
 
@@ -564,7 +699,7 @@ def add_exercise(request: Request, template_id: int = Form(...), exercise_name: 
 
         max_row = conn.execute(
             "SELECT COALESCE(MAX(order_index), -1) AS m FROM template_exercises WHERE template_id=?",
-            (template_id,)
+            (template_id,),
         ).fetchone()
         next_idx = max_row["m"] + 1
 
@@ -572,7 +707,6 @@ def add_exercise(request: Request, template_id: int = Form(...), exercise_name: 
             INSERT OR IGNORE INTO template_exercises(template_id, exercise_id, order_index)
             VALUES (?, ?, ?)
         """, (template_id, ex_id, next_idx))
-
         conn.commit()
 
     return RedirectResponse(url=f"/?t={template_id}&edit=1", status_code=303)

@@ -18,7 +18,7 @@
       --btn-border: #dcdcdc;
       --shadow: 0 1px 0 rgba(0, 0, 0, .03);
       --focus: rgba(0, 0, 0, .15);
-      --overlay: rgba(0, 0, 0, .45);
+      --overlay: rgba(0,  0,  0, .45);
     }
 
     .dark {
@@ -220,13 +220,13 @@
       </div>
 
       <div class="actions">
+        <a href="/history"><button type="button" class="iconbtn" title="History">📜</button></a>
+
         {% if user_is_admin and selected_template %}
           {% if edit %}
-            <a href="/?t={{ selected_template.id }}"><button type="button" class="iconbtn"
-                title="Exit Edit Mode">✏️</button></a>
+            <a href="/?t={{ selected_template.id }}"><button type="button" class="iconbtn" title="Exit Edit Mode">✏️</button></a>
           {% else %}
-            <a href="/?t={{ selected_template.id }}&edit=1"><button type="button" class="iconbtn"
-                title="Edit Mode">✏️</button></a>
+            <a href="/?t={{ selected_template.id }}&edit=1"><button type="button" class="iconbtn" title="Edit Mode">✏️</button></a>
           {% endif %}
         {% endif %}
 

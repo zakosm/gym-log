@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>History - Gym Log</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root{
+      --bg:#ffffff; --text:#111; --muted:#666;
+      --card:#fff; --border:#e6e6e6;
+      --btn-bg:#f5f5f5; --btn-text:#111; --btn-border:#dcdcdc;
+      --shadow: 0 1px 0 rgba(0,0,0,.03);
+      --focus: rgba(0,0,0,.15);
+    }
+    .dark{
+      --bg:#0b0f14; --text:#e9eef5; --muted:#a4b1c2;
+      --card:#0f1620; --border:#1f2a38;
+      --btn-bg:#121b26; --btn-text:#e9eef5; --btn-border:#253246;
+      --shadow: 0 1px 0 rgba(0,0,0,.25);
+      --focus: rgba(255,255,255,.18);
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    }
+    .topbar{
+      position: sticky; top: 0; z-index: 50;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(6px);
+    }
+    .topbar-inner{
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 10px 14px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 12px;
+    }
+    .title{display:flex; flex-direction:column; gap:4px; min-width:0;}
+    .title h1{
+      font-size:18px; margin:0; line-height:1.1;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .pill{
+      display:inline-block; width:fit-content;
+      padding:4px 10px; border:1px solid var(--border);
+      border-radius:999px; font-size:12px; color:var(--muted);
+      background: var(--card);
+    }
+    .actions{display:flex; gap:10px; align-items:center; flex-shrink:0;}
+
+    .container{
+      max-width:900px; margin:0 auto; padding:14px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+      margin:12px 0;
+      box-shadow: var(--shadow);
+    }
+
+    label{font-size:14px; color:var(--muted);}
+    input,button{
+      width:100%;
+      padding:12px;
+      margin-top:8px;
+      border-radius:12px;
+      border:1px solid var(--btn-border);
+      background:var(--card);
+      color:var(--text);
+      font-size:16px;
+      outline:none;
+    }
+    input:focus,button:focus{ box-shadow:0 0 0 3px var(--focus); }
+
+    button{
+      cursor:pointer; font-weight:800;
+      background:var(--btn-bg); color:var(--btn-text);
+    }
+    .iconbtn{
+      width:auto; min-width:44px;
+      padding:10px 12px; margin-top:0;
+      display:inline-flex; align-items:center; justify-content:center;
+      line-height:1;
+    }
+
+    .row{display:grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap:10px;}
+    @media (max-width:800px){ .row{grid-template-columns:1fr 1fr;} }
+
+    .muted{color:var(--muted); font-size:14px;}
+
+    table{width:100%; border-collapse:collapse; margin-top:10px; font-size:14px;}
+    th,td{padding:10px; border-bottom:1px solid var(--border); text-align:left;}
+    th{color:var(--muted); font-weight:700;}
+    .pager{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:10px;}
+    a{text-decoration:none;}
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="title">
+        <h1>History</h1>
+        <span class="pill">User: {{ user_email }}</span>
+      </div>
+
+      <div class="actions">
+        <a href="/"><button type="button" class="iconbtn" title="Back">🏠</button></a>
+        <a href="/export.csv{{ export_qs }}"><button type="button" class="iconbtn" title="Download CSV">⬇️</button></a>
+
+        <form method="post" action="/logout" style="margin:0;">
+          <button type="submit" class="iconbtn" title="Log out">🚪</button>
+        </form>
+
+        <button type="button" id="themeToggle" class="iconbtn" title="Toggle dark mode">🌙</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2 style="margin:0 0 8px;">Filters</h2>
+
+      <form method="get" action="/history">
+        <div class="row">
+          <div>
+            <label>Exercise contains</label>
+            <input name="exercise" value="{{ exercise or '' }}" placeholder="e.g., Bench" />
+          </div>
+          <div>
+            <label>Workout contains</label>
+            <input name="workout" value="{{ workout or '' }}" placeholder="e.g., Push" />
+          </div>
+          <div>
+            <label>Start day</label>
+            <input name="start" type="date" value="{{ start or '' }}" />
+          </div>
+          <div>
+            <label>End day</label>
+            <input name="end" type="date" value="{{ end or '' }}" />
+          </div>
+        </div>
+
+        <input type="hidden" name="page" value="1" />
+        <button type="submit" style="margin-top:12px;">Apply filters</button>
+      </form>
+
+      <div class="muted" style="margin-top:10px;">
+        Showing {{ rows|length }} of {{ total }} total rows (page {{ page }} of {{ pages }}).
+      </div>
+
+      {% if rows|length == 0 %}
+        <div class="muted" style="margin-top:10px;">No rows match your filters.</div>
+      {% else %}
+        <table>
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Workout</th>
+              <th>Exercise</th>
+              <th>Weight</th>
+              <th>Reps</th>
+              <th>Logged</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td>{{ r.day }}</td>
+                <td>{{ r.workout }}</td>
+                <td>{{ r.exercise }}</td>
+                <td>{{ r.weight }}</td>
+                <td>{{ r.reps }}</td>
+                <td class="muted">{{ r.created_at }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="pager">
+          <div>
+            {% if page > 1 %}
+              <a href="/history{{ prev_qs }}"><button type="button" class="iconbtn">← Prev</button></a>
+            {% endif %}
+          </div>
+
+          <div>
+            {% if page < pages %}
+              <a href="/history{{ next_qs }}"><button type="button" class="iconbtn">Next →</button></a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const btn = document.getElementById("themeToggle");
+
+      function systemPrefersDark() {
+        return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      }
+      function applyTheme(mode) {
+        const isDark = (mode === "dark");
+        root.classList.toggle("dark", isDark);
+        btn.textContent = isDark ? "☀️" : "🌙";
+        btn.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+      }
+
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark" || saved === "light") applyTheme(saved);
+      else applyTheme(systemPrefersDark() ? "dark" : "light");
+
+      btn.addEventListener("click", () => {
+        const nowDark = root.classList.contains("dark");
+        const next = nowDark ? "light" : "dark";
+        localStorage.setItem("theme", next);
+        applyTheme(next);
+      });
+    })();
+  </script>
+</body>
+</html>
