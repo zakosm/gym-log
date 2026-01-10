@@ -189,7 +189,6 @@
       text-decoration: none;
     }
 
-    /* Custom modal */
     .overlay {
       position: fixed;
       inset: 0;
@@ -217,22 +216,27 @@
       <div class="title">
         <h1>Gym Log</h1>
         <span class="pill">Today: {{ today }}</span>
+        <span class="pill">User: {{ user_email }}</span>
       </div>
 
       <div class="actions">
-        {% if selected_template %}
-        {% if edit %}
-        <a href="/?t={{ selected_template.id }}"><button type="button" class="iconbtn"
-            title="Exit Edit Mode">✏️</button></a>
-        {% else %}
-        <a href="/?t={{ selected_template.id }}&edit=1"><button type="button" class="iconbtn"
-            title="Edit Mode">✏️</button></a>
-        {% endif %}
+        {% if user_is_admin and selected_template %}
+          {% if edit %}
+            <a href="/?t={{ selected_template.id }}"><button type="button" class="iconbtn"
+                title="Exit Edit Mode">✏️</button></a>
+          {% else %}
+            <a href="/?t={{ selected_template.id }}&edit=1"><button type="button" class="iconbtn"
+                title="Edit Mode">✏️</button></a>
+          {% endif %}
         {% endif %}
 
         {% if selected_template and (active_session_id is not none) and (not edit) %}
-        <button type="button" id="openDone" class="iconbtn" title="Finish workout">✅</button>
+          <button type="button" id="openDone" class="iconbtn" title="Finish workout">✅</button>
         {% endif %}
+
+        <form method="post" action="/logout" style="margin:0;">
+          <button type="submit" class="iconbtn" title="Log out">🚪</button>
+        </form>
 
         <button type="button" id="themeToggle" class="iconbtn" title="Toggle dark mode">🌙</button>
       </div>
@@ -241,7 +245,6 @@
 
   <div class="container">
 
-    <!-- Template selector -->
     <div class="card">
       <form method="get" action="/">
         <label>Pick workout template</label>
@@ -283,7 +286,6 @@
           PR: {{ pr[ex.name].weight }} x {{ pr[ex.name].reps }} ({{ pr[ex.name].day }})
         </div>
         {% endif %}
-
 
         {% if edit %}
         <form method="post" action="/template/remove_exercise" style="margin-top:10px;">
@@ -327,7 +329,6 @@
     </div>
     {% endif %}
 
-    <!-- This session -->
     <div class="card">
       <h2 style="margin:0 0 8px;">This session</h2>
 
@@ -347,7 +348,6 @@
 
   </div>
 
-  <!-- Done confirmation modal -->
   <div id="doneOverlay" class="overlay" aria-hidden="true">
     <div class="modal card">
       <h2 style="margin:0 0 8px;">Finish workout?</h2>
@@ -368,7 +368,6 @@
   </div>
 
   <script>
-    // Dark mode toggle (localStorage + system default)
     (function () {
       const root = document.documentElement;
       const btn = document.getElementById("themeToggle");
@@ -383,7 +382,7 @@
         btn.title = isDark ? "Switch to light mode" : "Switch to dark mode";
       }
 
-      const saved = localStorage.getItem("theme"); // "dark" | "light" | null
+      const saved = localStorage.getItem("theme");
       if (saved === "dark" || saved === "light") applyTheme(saved);
       else applyTheme(systemPrefersDark() ? "dark" : "light");
 
@@ -395,7 +394,6 @@
       });
     })();
 
-    // Done modal
     (function () {
       const openBtn = document.getElementById("openDone");
       const overlay = document.getElementById("doneOverlay");
@@ -415,7 +413,6 @@
       if (openBtn) openBtn.addEventListener("click", open);
       if (cancelBtn) cancelBtn.addEventListener("click", close);
 
-      // click outside modal closes
       if (overlay) {
         overlay.addEventListener("click", (e) => {
           if (e.target === overlay) close();
